@@ -1,0 +1,60 @@
+name: Scheduled Security Review
+
+on:
+  schedule:
+    # Run security review every Monday at 9 AM UTC
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+
+jobs:
+  security-review:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Security Review with Bonk
+        uses: ask-bonk/ask-bonk/github@main
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        with:
+          model: "opencode/claude-opus-4-5"
+          prompt: |
+            Perform a comprehensive security review of the codebase focusing on:
+            
+            1. **Authentication & Authorization**
+               - Review JWT handling and HttpOnly cookie implementation
+               - Check for proper session validation
+               - Verify RBAC is correctly implemented
+            
+            2. **XSS Prevention**
+               - Verify DOMPurify is used for dynamic content
+               - Check for dangerouslySetInnerHTML usage
+               - Review HTML sanitization configuration
+            
+            3. **API Security**
+               - Check CORS configuration
+               - Verify API endpoint protection
+               - Review error handling for sensitive data exposure
+            
+            4. **Dependencies**
+               - Scan for known vulnerabilities in package.json
+               - Check for outdated security-critical packages
+            
+            5. **Environment Variables**
+               - Verify .env is in .gitignore
+               - Check for exposed secrets
+            
+            6. **Code Quality**
+               - Review error handling
+               - Check for proper input validation
+               - Verify no hardcoded credentials
+            
+            Provide specific file paths and line numbers for any issues found.
+            Prioritize critical security issues.
+            Create an issue if vulnerabilities are discovered.

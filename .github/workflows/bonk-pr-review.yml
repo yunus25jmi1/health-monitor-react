@@ -1,0 +1,67 @@
+name: Automated PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  review:
+    if: github.event.sender.type != 'Bot'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Bonk PR Review
+        uses: ask-bonk/ask-bonk/github@main
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        with:
+          model: "opencode/claude-opus-4-5"
+          token_permissions: NO_PUSH
+          prompt: |
+            Review this PR for:
+            
+            1. **Security Issues**
+               - XSS vulnerabilities
+               - Insecure authentication/authorization
+               - Exposure of sensitive data
+               - Improper API usage
+            
+            2. **Code Quality**
+               - Performance issues
+               - Memory leaks
+               - Improper error handling
+               - Code duplication
+            
+            3. **React Best Practices**
+               - Unnecessary re-renders
+               - Improper hook usage
+               - Memory leaks in useEffect
+               - Proper dependency arrays
+            
+            4. **Accessibility**
+               - ARIA attributes
+               - Keyboard navigation
+               - Color contrast
+               - Screen reader compatibility
+            
+            5. **Testing**
+               - Should include tests
+               - Test coverage concerns
+               - Missing edge cases
+            
+            6. **Documentation**
+               - Missing JSDoc comments
+               - README updates needed
+               - Type hints
+            
+            Provide specific line numbers and suggest fixes. Be constructive and helpful.
+            Use GitHub's suggestion feature when applicable.
