@@ -1,0 +1,36 @@
+# Cloudflare Pages Configuration
+# Reference: https://developers.cloudflare.com/pages/configuration/project-configuration/
+
+name = "health-monitor-react"
+type = "javascript"
+
+# Build configuration
+[build]
+command = "npm install && npm run build"
+cwd = "./"
+watch_paths = ["src/**/*.{js,jsx,ts,tsx}"]
+
+# Build output
+[build.upload]
+dir = "dist"
+
+# Environment variables for production
+[env.production.vars]
+VITE_API_URL = "https://health.yunus.eu.org/api/v1"
+
+# Environment variables for preview
+[env.preview.vars]
+VITE_API_URL = "http://localhost:8080/api/v1"
+
+# Routes configuration
+[[routes]]
+pattern = "/*"
+zone_name = "example.com"  # Replace with your domain if using custom domain
+
+# Analytics Engine (optional - tracks analytics)
+[analytics]
+enabled = true
+
+# Observability (optional)
+[observability]
+enabled = true
