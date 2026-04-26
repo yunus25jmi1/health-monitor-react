@@ -10,6 +10,12 @@ node_modules/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.opencode
+
+# Local Bonk Reports
+*-report.md
+security-check-*.md
+
 
 # Debug logs
 npm-debug.log*
