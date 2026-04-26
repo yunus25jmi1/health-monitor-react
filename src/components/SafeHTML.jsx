@@ -1,5 +1,4 @@
 import DOMPurify from 'dompurify';
-import PropTypes from 'prop-types';
 
 /**
  * SafeHTML Component
@@ -13,9 +12,24 @@ import PropTypes from 'prop-types';
  * - Sanitizes attributes
  * - Preserves safe HTML formatting (bold, italic, links, etc.)
  * 
- * @param {string} html - HTML content to sanitize and render
- * @param {string} className - Optional CSS classes for the wrapper div
- * @param {object} config - Optional DOMPurify configuration
+ * @param {Object} props - Component props
+ * @param {string} props.html - HTML content to sanitize and render (required)
+ * @param {string} [props.className=''] - Optional CSS classes for the wrapper div
+ * @param {Object} [props.config={}] - Optional DOMPurify configuration
+ * @returns {React.ReactElement} Safe HTML rendered in a div
+ * 
+ * @example
+ * // Basic usage
+ * <SafeHTML html="<b>Bold text</b>" />
+ * 
+ * // With custom classes
+ * <SafeHTML html={content} className="mt-4 text-lg" />
+ * 
+ * // With custom DOMPurify config
+ * <SafeHTML 
+ *   html={content}
+ *   config={{ ALLOWED_TAGS: ['b', 'i', 'em', 'strong'] }}
+ * />
  */
 const SafeHTML = ({ html, className = '', config = {} }) => {
   // Default configuration for DOMPurify
@@ -35,12 +49,6 @@ const SafeHTML = ({ html, className = '', config = {} }) => {
       dangerouslySetInnerHTML={{ __html: sanitizedHTML }}
     />
   );
-};
-
-SafeHTML.propTypes = {
-  html: PropTypes.string.isRequired,
-  className: PropTypes.string,
-  config: PropTypes.object,
 };
 
 export default SafeHTML;
