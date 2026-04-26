@@ -1,24 +1,29 @@
 import axios from 'axios';
 
 /**
- * Secure Axios Instance with HttpOnly Cookie Support
+ * Secure Axios Instance with JWT Bearer Token Support
  * 
  * Security Configuration:
- * - withCredentials: true - Automatically sends cookies with every request
- * - No manual token injection - Backend handles HttpOnly cookies
- * - Tokens never exposed to JavaScript (XSS protection)
+ * - JWT stored in localStorage (can be upgraded to sessionStorage for better security)
+ * - Automatically sends Authorization header with every request
+ * - Tokens included in all API calls
+ * - 401 responses handled gracefully (clear token and redirect to login)
  */
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'https://health.yunus.eu.org/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // Enable cookie-based authentication (HttpOnly cookies)
+  withCredentials: true,
 });
 
-// Request interceptor for enhanced error handling
+// Request interceptor - add JWT token to every request
 api.interceptors.request.use(
   (config) => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   (error) => {
@@ -26,7 +31,7 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor for handling authentication errors
+// Response interceptor - handle authentication errors
 api.interceptors.response.use(
   (response) => {
     return response;
@@ -34,8 +39,15 @@ api.interceptors.response.use(
   (error) => {
     // Handle 401 Unauthorized - session expired or invalid
     if (error.response?.status === 401) {
-      // Clear any stale auth state
-      window.location.href = '/login';
+      // Clear stale auth state
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('user');
+      
+      // Only redirect if not already on login page
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
