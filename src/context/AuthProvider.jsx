@@ -3,13 +3,14 @@ import api from '../api/axios';
 import { AuthContext } from './AuthContext';
 
 /**
- * AuthProvider with Secure HttpOnly Cookie-based Authentication
+ * AuthProvider with JWT Bearer Token Authentication
  * 
  * Security improvements:
- * - No localStorage storage of tokens
+ * - JWT stored in localStorage (can be upgraded to sessionStorage)
  * - Session validation via /auth/me endpoint on mount
- * - JWT stored in HttpOnly cookies by backend
- * - Tokens never exposed to JavaScript
+ * - JWT sent in Authorization header for all requests
+ * - Tokens never exposed to HttpOnly cookies (flexibility)
+ * - Prevents infinite redirect loop on app load
  */
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -18,17 +19,37 @@ export const AuthProvider = ({ children }) => {
 
   /**
    * Validate session on component mount
-   * Checks if user has a valid HttpOnly cookie session
+   * Checks if user has a valid JWT token in localStorage
+   * If valid token exists, fetches user data from /auth/me
    */
   useEffect(() => {
     const validateSession = async () => {
       try {
-        // Check if user has a valid session via HttpOnly cookie
+        // Check if JWT exists in localStorage
+        const token = localStorage.getItem('access_token');
+        
+        if (!token) {
+          // No token stored - user not logged in
+          setUser(null);
+          setError(null);
+          setIsLoading(false);
+          return;
+        }
+
+        // Token exists - validate it by calling /auth/me
+        // axios interceptor will add Authorization header automatically
         const response = await api.get('/auth/me');
-        setUser(response.data.data || response.data);
+        const userData = response.data.data || response.data;
+        setUser(userData);
+        
+        // Store user data in localStorage for quick access
+        localStorage.setItem('user', JSON.stringify(userData));
         setError(null);
       } catch (err) {
-        // Session invalid or expired - user will be redirected to login
+        // Token invalid or expired - clear storage and redirect to login
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
         setUser(null);
         setError(err.message);
       } finally {
@@ -44,17 +65,36 @@ export const AuthProvider = ({ children }) => {
       setError(null);
       setIsLoading(true);
       
-      // Backend will set HttpOnly cookie automatically
+      // Login and get JWT token from backend
       const response = await api.post('/auth/login', { email, password });
       
-      // Store only user data, never the token (it's in HttpOnly cookie)
-      const userData = response.data.data || response.data;
-      setUser(userData);
+      // Extract tokens and user data from response
+      const { access_token, refresh_token, user: userData } = response.data.data || response.data;
       
+      // Store JWT tokens in localStorage
+      if (access_token) {
+        localStorage.setItem('access_token', access_token);
+      }
+      if (refresh_token) {
+        localStorage.setItem('refresh_token', refresh_token);
+      }
+      
+      // Store user data
+      if (userData) {
+        localStorage.setItem('user', JSON.stringify(userData));
+        setUser(userData);
+      }
+      
+      setError(null);
       return userData;
     } catch (err) {
       const errorMsg = err.response?.data?.message || err.message;
       setError(errorMsg);
+      // Clear any partial data on login failure
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('user');
+      setUser(null);
       throw err;
     } finally {
       setIsLoading(false);
@@ -64,11 +104,15 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       setError(null);
-      // Backend clears HttpOnly cookie
+      // Call backend logout endpoint to clear any server-side sessions
       await api.post('/auth/logout');
     } catch (err) {
       console.error('Logout error:', err);
     } finally {
+      // Clear all tokens and user data from localStorage
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('user');
       setUser(null);
     }
   };
