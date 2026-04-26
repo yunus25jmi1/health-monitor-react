@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axios';
 import { useAuth } from '../hooks/useAuth';
+import SafeHTML from '../components/SafeHTML';
 import { 
   Users, AlertCircle, CheckCircle, ChevronRight, 
   Search, Bell, LogOut, LayoutDashboard, FileEdit 
@@ -264,9 +265,7 @@ const DoctorDashboard = () => {
                   </div>
                   
                   <div className="flex-1 bg-slate-50 rounded-2xl p-6 font-mono text-sm overflow-auto border border-slate-200">
-                    <div className="prose prose-slate max-w-none">
-                      {selectedReport.ai_draft}
-                    </div>
+                    <SafeHTML html={selectedReport.ai_draft} />
                   </div>
                 </div>
 
